@@ -1,0 +1,49 @@
+service: NestJSSSMConfig
+
+plugins:
+  - serverless-webpack
+  - serverless-offline
+  - serverless-localstack
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  environment:
+    DB_CONNSTRING: ssm:/nestjsssmconfig/local/dbconnstring
+    NO_COLOR: 'true'
+  stage: ${opt:stage, 'local'}
+  region: us-east-1
+  endpointType: PRIVATE
+  memorySize: 512
+  deploymentBucket: localstack-packages
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - ssm:GetParameter
+          Resource:
+            - 'arn:aws:ssm:*:*:/nestjsssmconfig/*'
+
+functions:
+  main:
+    handler: src/main.handler
+    timeout: 30
+    events:
+      - http:
+          path: /{any+}
+          method: any
+
+package:
+  excludeDevDependencies: true
+
+custom:
+  serverless-offline:
+    httpPort: 8089
+    noPrependStageInUrl: true
+  localstack:
+    stages:
+      - local
+    host: http://localhost
+    edgePort: 4566
+    debug: true
